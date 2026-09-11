@@ -168,7 +168,7 @@
 		"vfile": "6.0.3",
 		"vite": "7.3.5",
 		"vite-tsconfig-paths": "6.1.1",
-		"vitest": "4.1.8",
+		"vitest": "4.1.11",
 		"wrangler": "4.98.0",
 		"zod": "4.4.3"
 	},
