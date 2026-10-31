@@ -101,7 +101,7 @@
 		"fast-glob": "3.3.3",
 		"github-slugger": "2.0.0",
 		"globals": "17.6.0",
-		"happy-dom": "20.10.2",
+		"happy-dom": "21.0.4",
 		"hast-util-heading-rank": "3.0.0",
 		"hast-util-select": "6.0.4",
 		"hast-util-to-string": "3.0.1",
