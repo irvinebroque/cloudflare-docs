@@ -179,32 +179,50 @@ For example, to apply a rate limit of 1500 requests per minute, you would define
 
 ## Weighted requests
 
-By default, each call to `limit()` counts as one request. To count a call as more than one request, pass a `delta`. For example, you can make an expensive route use more of the limit than a cheap one:
+Requests can require different amounts of work. A product lookup might be cheap, while a search runs an expensive database query. Use weighted requests to make expensive operations consume more of the same rate limit.
+
+By default, each call to `limit()` counts as one unit. Your Worker chooses each operation's weight through `delta`. For example, assign one unit to a product lookup and 10 units to a search.
+
+Use the same `key` across routes to share a user's allowance. The `key` identifies whose allowance to use. The `delta` determines how much the operation consumes.
+
+The following handler runs after your application authenticates the request. Pass the verified user ID as `userId`:
 
 <TypeScriptExample filename="src/index.ts">
 
 ```ts
-export default {
-  async fetch(request, env): Promise<Response> {
-    const { pathname } = new URL(request.url);
+export async function handleAuthenticatedRequest(
+	request: Request,
+	env: Env,
+	userId: string,
+): Promise<Response> {
+	const { pathname } = new URL(request.url);
 
-    // A search costs 10 times as much as any other request
-    const delta = pathname.startsWith("/search") ? 10 : 1;
+	// Assign searches a weight of 10 and other requests a weight of 1.
+	const delta = pathname === "/search" ? 10 : 1;
 
-    const { success } = await env.MY_RATE_LIMITER.limit({
-      key: pathname,
-      delta,
-    });
-    if (!success) {
-      return new Response("Rate limit exceeded", { status: 429 });
-    }
+	const { success } = await env.MY_RATE_LIMITER.limit({
+		key: userId,
+		delta,
+	});
+	if (!success) {
+		return new Response("Rate limit exceeded", { status: 429 });
+	}
 
-    return new Response("Success!");
-  },
-} satisfies ExportedHandler<Env>;
+	return new Response("Success!");
+}
 ```
 
 </TypeScriptExample>
+
+For example, configure `simple.limit` as `100` and `simple.period` as `60`. The threshold is then 100 units per user per minute, in each Cloudflare location. For one user within that period, the following requests consume 70 units:
+
+| Activity           | Weight per request (`delta`) | Units consumed |
+| ------------------ | ---------------------------- | -------------- |
+| 20 product lookups | 1                            | 20             |
+| 5 searches         | 10                           | 50             |
+| Total              | —                            | 70             |
+
+These 25 requests represent 70 units of work. Weighting lets expensive searches consume the allowance faster than product lookups.
 
 The `delta` must be a positive integer. Other values can cause `limit()` to throw an error.
 

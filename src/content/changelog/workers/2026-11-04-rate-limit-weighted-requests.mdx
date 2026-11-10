@@ -10,27 +10,31 @@ import { TypeScriptExample } from "~/components";
 
 The [Rate Limiting binding](/workers/runtime-apis/bindings/rate-limit/) now accepts an optional `delta` in `limit()`. A call counts as `delta` requests instead of one, so you can weight requests by what they cost without calling `limit()` in a loop.
 
+For example, assign one unit to a product lookup and 10 units to an expensive search. Both operations consume the same user's allowance. The following handler takes a verified user ID from your application's authentication flow:
+
 <TypeScriptExample filename="src/index.ts">
 
 ```ts
-export default {
-	async fetch(request, env): Promise<Response> {
-		const { pathname } = new URL(request.url);
+export async function handleAuthenticatedRequest(
+	request: Request,
+	env: Env,
+	userId: string,
+): Promise<Response> {
+	const { pathname } = new URL(request.url);
 
-		// A search costs 10 times as much as any other request
-		const delta = pathname.startsWith("/search") ? 10 : 1;
+	// Assign searches a weight of 10 and other requests a weight of 1.
+	const delta = pathname === "/search" ? 10 : 1;
 
-		const { success } = await env.MY_RATE_LIMITER.limit({
-			key: pathname,
-			delta,
-		});
-		if (!success) {
-			return new Response("Rate limit exceeded", { status: 429 });
-		}
+	const { success } = await env.MY_RATE_LIMITER.limit({
+		key: userId,
+		delta,
+	});
+	if (!success) {
+		return new Response("Rate limit exceeded", { status: 429 });
+	}
 
-		return new Response("Success!");
-	},
-} satisfies ExportedHandler<Env>;
+	return new Response("Success!");
+}
 ```
 
 </TypeScriptExample>
