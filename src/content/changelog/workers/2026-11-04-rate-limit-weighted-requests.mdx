@@ -8,7 +8,9 @@ date: 2026-11-04
 
 import { TypeScriptExample } from "~/components";
 
-The [Rate Limiting binding](/workers/runtime-apis/bindings/rate-limit/) now accepts an optional `delta` in `limit()`. A call counts as `delta` requests instead of one, so you can weight requests by what they cost without calling `limit()` in a loop.
+Requests can require different amounts of work. A product lookup might be cheap, while a search runs an expensive database query. Use weighted requests to make expensive operations consume more of the same rate limit.
+
+The [Rate Limiting binding](/workers/runtime-apis/bindings/rate-limit/) now accepts an optional `delta` in `limit()`. Pass `delta` to choose how many units a call consumes.
 
 For example, assign one unit to a product lookup and 10 units to an expensive search. Both operations consume the same user's allowance. The following handler takes a verified user ID from your application's authentication flow:
 
